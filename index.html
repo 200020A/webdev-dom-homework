@@ -40,6 +40,7 @@
   const textInputElement = document.getElementById('text-input');
 
 
+
   const comments = [
     {
       name: 'Глеб Фокин',
@@ -56,10 +57,12 @@
       likeCount: '75',
     },
   ];
- 
- function funcDate(currentDate) {
-  return currentDate = new Date().toLocaleDateString('default', { day: '2-digit', month: '2-digit', year: '2-digit' }) + " " + new Date().toLocaleTimeString().slice(0, -3);
- }
+
+  function funcDate(currentDate) {
+    return currentDate = new Date().toLocaleDateString('default', { day: '2-digit', month: '2-digit', year: '2-digit' }) + " " + new Date().toLocaleTimeString().slice(0, -3);
+  }
+
+
 
   function render() {
     listElement.innerHTML = comments.map((comment, index) => {
@@ -84,12 +87,25 @@
     }).join("");
 
     initEventListener();
+    answerComment();
   };
+
+  function answerComment() {
+    const comment = document.querySelectorAll('.comment')
+    const formElementText = document.querySelector('.add-form-text')
+    const formElementName = document.querySelector('.add-form-name')
+    comment.forEach((el, index) => {
+      el.addEventListener('click', (event) => {
+        formElementText.value = `>${comments[index].name} \n ${comments[index].text}`
+      })
+    });
+  }
 
   function initEventListener() {
     const likeButtonElements = document.querySelectorAll('.like-button');
     for (const likeButtonElement of likeButtonElements) {
-      likeButtonElement.addEventListener('click', () => {
+      likeButtonElement.addEventListener('click', (event) => {
+        event.stopPropagation()
         const index = likeButtonElement.dataset.index
         if (comments[index].isLiked) {
           comments[index].isLiked = !comments[index].isLiked
@@ -106,11 +122,9 @@
   buttonElement.addEventListener('click', () => {
     nameInputElement.classList.remove("error");
     textInputElement.classList.remove("error");
-    if (nameInputElement.value === "") {
-      nameInputElement.classList.add("error");
-      return;
-    } else if (textInputElement.value === "") {
-      textInputElement.classList.add("error")
+    if (nameInputElement.value.trim() === '' || textInputElement.value.trim() === '') {
+      nameInputElement.classList.add('error');
+      textInputElement.classList.add('error');
       return;
     }
 
@@ -118,17 +132,27 @@
 
     comments.push(
       {
-        name: nameInputElement.value,
+        name: nameInputElement.value
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;"),
         date: funcDate(currentDate),
-        text: textInputElement.value,
+        text: textInputElement.value
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;"),
         isLiked: false,
         likeCount: 0,
+        paint: '',
       });
 
     render();
 
     nameInputElement.value = "";
     textInputElement.value = "";
+
   });
 
   render();
