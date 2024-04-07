@@ -53,9 +53,9 @@
         const appComments = responseData.comments.map((comment) => {
           return {
             name: comment.author.name,
-            date: new Date(comment.date).toLocaleDateString('default', { day: '2-digit', month: '2-digit', year: '2-digit' }) + " " + new Date().toLocaleTimeString().slice(0, -3),
+            date: new Date(comment.date).toLocaleDateString('ru-RU', { year: '2-digit', month: '2-digit', day: '2-digit' }) + ' ' + new Date(comment.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
             text: comment.text,
-            likeCount: comment.like,
+            likeCount: comment.likes,
             isLiked: false,
           };
         });
@@ -67,11 +67,6 @@
 
   let comments = [];
  
-
-  function funcDate(currentDate) {
-    return currentDate = new Date().toLocaleDateString('default', { day: '2-digit', month: '2-digit', year: '2-digit' }) + " " + new Date().toLocaleTimeString().slice(0, -3);
-  }
-
 
 
   function render() {
@@ -90,7 +85,7 @@
             <div class="comment-footer">
               <div class="likes">
                 <span class="likes-counter" data-index ="${index}">${comment.likeCount}</span>
-                  <button class="like-button ${classButton}" data-index ="${index}"></button>
+                  <button class="like-button ${classButton}" data-index ="${index}" data-like="${comment.isLiked}"></button>
                   </div>
                   </div>
         </li>`
@@ -137,8 +132,6 @@
       textInputElement.classList.add('error');
       return;
     }
-
-    let currentDate = new Date();
 
 
     fetch(
