@@ -39,29 +39,34 @@
   const nameInputElement = document.getElementById('name-input');
   const textInputElement = document.getElementById('text-input');
 
+  function getComments() {
+    return fetch(
+      'https://wedev-api.sky.pro/api/v1/anastasia-petrova/comments',
+      {
+        method: "GET"
+      }
+    )
+      .then((response) => {
+        return response.json();
+      })
+      .then((responseData) => {
+        const appComments = responseData.comments.map((comment) => {
+          return {
+            name: comment.author.name,
+            date: new Date(comment.date).toLocaleDateString('ru-RU', { year: '2-digit', month: '2-digit', day: '2-digit' }) + ' ' + new Date(comment.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            text: comment.text,
+            likeCount: comment.likes,
+            isLiked: false,
+          };
+        });
+        comments = appComments;
+        render();
+      });
+  };
+  getComments();
 
-
-  const comments = [
-    {
-      name: 'Глеб Фокин',
-      date: '12.02.22 12:18',
-      text: 'Это будет первый комментарий на этой странице',
-      isLiked: 'false',
-      likeCount: '3',
-    },
-    {
-      name: 'Варвара Н.',
-      date: '13.02.22 19:22',
-      text: 'Мне нравиться как оформлена эта страница! ❤',
-      isLiked: 'true',
-      likeCount: '75',
-    },
-  ];
-
-  function funcDate(currentDate) {
-    return currentDate = new Date().toLocaleDateString('default', { day: '2-digit', month: '2-digit', year: '2-digit' }) + " " + new Date().toLocaleTimeString().slice(0, -3);
-  }
-
+  let comments = [];
+ 
 
 
   function render() {
@@ -80,7 +85,7 @@
             <div class="comment-footer">
               <div class="likes">
                 <span class="likes-counter" data-index ="${index}">${comment.likeCount}</span>
-                  <button class="like-button ${classButton}" data-index ="${index}"></button>
+                  <button class="like-button ${classButton}" data-index ="${index}" data-like="${comment.isLiked}"></button>
                   </div>
                   </div>
         </li>`
@@ -128,25 +133,30 @@
       return;
     }
 
-    let currentDate = new Date();
 
-    comments.push(
+    fetch(
+      'https://wedev-api.sky.pro/api/v1/anastasia-petrova/comments',
       {
-        name: nameInputElement.value
+        method: "POST",
+        body: JSON.stringify({
+          name: nameInputElement.value
           .replaceAll("&", "&amp;")
           .replaceAll("<", "&lt;")
           .replaceAll(">", "&gt;")
           .replaceAll('"', "&quot;"),
-        date: funcDate(currentDate),
-        text: textInputElement.value
+          text: textInputElement.value
           .replaceAll("&", "&amp;")
           .replaceAll("<", "&lt;")
           .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;"),
-        isLiked: false,
-        likeCount: 0,
-        paint: '',
-      });
+          .replaceAll('"', "&quot;")
+        })
+      }
+    ).then(() => {
+      return getComments();
+    }).then(() => {
+      nameInputElement.value = "";
+      textInputElement.value = "";
+    })
 
     render();
 
