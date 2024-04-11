@@ -9,9 +9,11 @@
 
 <body>
   <div class="container">
+    <div id="loading" style="display: none;">Пожалуйста подождите, зашружаю комментарий...</div>
     <ul id="list" class="comments">
       <!-- Код из JS -->
     </ul>
+    <div id="loading-message" style="display: none;">Комментарий добавляется...</div>
     <div class="add-form">
       <input id="name-input" type="text" class="add-form-name" placeholder="Введите ваше имя" />
       <textarea id="text-input" type="textarea" class="add-form-text" placeholder="Введите ваш коментарий"
@@ -40,6 +42,8 @@
   const textInputElement = document.getElementById('text-input');
 
   function getComments() {
+    const loadingElement = document.getElementById('loading');
+    loadingElement.style.display = 'block';
     return fetch(
       'https://wedev-api.sky.pro/api/v1/anastasia-petrova/comments',
       {
@@ -61,12 +65,16 @@
         });
         comments = appComments;
         render();
+        loadingElement.style.display = 'none';
       });
   };
   getComments();
 
   let comments = [];
- 
+
+  function funcDate(currentDate) {
+    return currentDate = new Date().toLocaleDateString('ru-RU', { year: '2-digit', month: '2-digit', day: '2-digit' }) + ' ' + new Date(comment.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
 
 
   function render() {
@@ -133,6 +141,15 @@
       return;
     }
 
+    let currentDate = new Date();
+
+    const loadingMessageElement = document.getElementById('loading-message');
+    loadingMessageElement.style.display = 'block';
+
+    const textFormElement = document.querySelector('.add-form');
+    textFormElement.style.display = 'none';
+
+    buttonElement.disabled = true;
 
     fetch(
       'https://wedev-api.sky.pro/api/v1/anastasia-petrova/comments',
@@ -140,28 +157,34 @@
         method: "POST",
         body: JSON.stringify({
           name: nameInputElement.value
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;"),
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;"),
           text: textInputElement.value
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
         })
       }
-    ).then(() => {
+    )
+    .then(() => {
       return getComments();
-    }).then(() => {
+    })
+    .then(() => {
       nameInputElement.value = "";
       textInputElement.value = "";
     })
+      .then(() => {
+        buttonElement.disabled = true;
+        loadingMessageElement.style.display = 'none';
+        textFormElement.style.display = 'flex';
+      })
 
     render();
 
-    nameInputElement.value = "";
-    textInputElement.value = "";
+
 
   });
 
