@@ -40,11 +40,11 @@
   const listElement = document.getElementById('list');
   const nameInputElement = document.getElementById('name-input');
   const textInputElement = document.getElementById('text-input');
-
+  let isLoaded = false
 
   function getComments() {
     const loadingElement = document.getElementById('loading');
-    loadingElement.style.display = 'block';
+    if (isLoaded === false) {loadingElement.style.display = 'block';}
     return fetch(
       'https://wedev-api.sky.pro/api/v1/anastasia-petrova/comments',
       {
@@ -52,6 +52,7 @@
       }
     )
       .then((response) => {
+        isLoaded = true
         return response.json();
       })
       .then((responseData) => {
@@ -145,27 +146,18 @@
     let currentDate = new Date();
 
     function addComment() {
-      if (nameInputElement.value === "" && textInputElement.value === "") {
-        nameInputElement.classList.add("errorinput");
-        textInputElement.classList.add("errorinput");
-        return
-      } else if (nameInputElement.value === "") {
-        nameInputElement.classList.add("errorinput");
-        return
-      } else if (textInputElement.value === "") {
-        textInputElement.classList.add("errorinput")
-        return
-      }
-
       const loadingMessageElement = document.getElementById('loading-message');
       loadingMessageElement.style.display = 'block';
 
+      //Скрываем форму добавления комментария
       const textFormElement = document.querySelector('.add-form');
       textFormElement.style.display = 'none';
 
+      // Ввод нового коментария
       buttonElement.disabled = true;
       buttonElement.textContent = 'Ждите...';
 
+      // Функция добавления данных на сервер
       fetch(
         'https://wedev-api.sky.pro/api/v1/anastasia-petrova/comments',
         {
@@ -197,9 +189,6 @@
         })
     }
     buttonElement.addEventListener("click", addComment)
-
-
-    render();
   });
 
 
