@@ -143,58 +143,54 @@
       return
     }
 
-    let currentDate = new Date();
-
-    function addComment() {
-      const loadingMessageElement = document.getElementById('loading-message');
-      loadingMessageElement.style.display = 'block';
-
-      //Скрываем форму добавления комментария
-      const textFormElement = document.querySelector('.add-form');
-      textFormElement.style.display = 'none';
-
-      // Ввод нового коментария
-      buttonElement.disabled = true;
-      buttonElement.textContent = 'Ждите...';
-
-      // Функция добавления данных на сервер
-      fetch(
-        'https://wedev-api.sky.pro/api/v1/anastasia-petrova/comments',
-        {
-          method: "POST",
-          body: JSON.stringify({
-            name: nameInputElement.value
-              .replaceAll("&", "&amp;")
-              .replaceAll("<", "&lt;")
-              .replaceAll(">", "&gt;")
-              .replaceAll('"', "&quot;"),
-            text: textInputElement.value
-              .replaceAll("&", "&amp;")
-              .replaceAll("<", "&lt;")
-              .replaceAll(">", "&gt;")
-              .replaceAll('"', "&quot;")
-          })
-        }
-      )
-        .then(() => {
-          return getComments();
-        })
-        .then(() => {
-          nameInputElement.value = "";
-          textInputElement.value = "";
-          buttonElement.disabled = false;
-          buttonElement.textContent = 'Написать';
-          loadingMessageElement.style.display = 'none';
-          textFormElement.style.display = 'flex';
-        })
-    }
-    buttonElement.addEventListener("click", addComment)
+    addComment()
   });
 
+  function addComment() {
+    const loadingMessageElement = document.getElementById('loading-message');
+    loadingMessageElement.style.display = 'block';
 
+    //Скрываем форму добавления комментария
+    const textFormElement = document.querySelector('.add-form');
+    textFormElement.style.display = 'none';
+
+    // Ввод нового коментария
+    buttonElement.disabled = true;
+    buttonElement.textContent = 'Ждите...';
+
+    // Функция добавления данных на сервер
+    fetch(
+      'https://wedev-api.sky.pro/api/v1/anastasia-petrova/comments',
+      {
+        method: "POST",
+        body: JSON.stringify({
+          name: nameInputElement.value
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;"),
+          text: textInputElement.value
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+        })
+      }
+    )
+      .then(() => {
+        return getComments();
+      })
+      .then(() => {
+        nameInputElement.value = "";
+        textInputElement.value = "";
+        buttonElement.disabled = false;
+        buttonElement.textContent = 'Написать';
+        loadingMessageElement.style.display = 'none';
+        textFormElement.style.display = 'flex';
+      })
+  }
 
   render();
-
 
   console.log("It works!");
 </script>
