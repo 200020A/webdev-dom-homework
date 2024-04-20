@@ -172,28 +172,44 @@
               .replaceAll("&", "&amp;")
               .replaceAll("<", "&lt;")
               .replaceAll(">", "&gt;")
-              .replaceAll('"', "&quot;")
+              .replaceAll('"', "&quot;"),
+              forceError : true
           })
         }
       )
-        .then(() => {
+        .then((response) => {
+          if (response.status === 400) {
+            throw new Error("Введен имя или текст меньше 3 символов")
+          }
+          if(response.status === 500) {
+            throw new Error("Ошибка на сервере, попробуйте чуть позже")
+          }
           return getComments();
         })
         .then(() => {
           nameInputElement.value = "";
           textInputElement.value = "";
+        })
+        .catch ((error) => {
+          if (error.message === "NetworkError when attempting to fetch resource.") {
+            return alert("Отсутствует интернет")
+          }
+          alert(error.message)
+          console.error(error)
+        })
+        .finally(() => {
           buttonElement.disabled = false;
           buttonElement.textContent = 'Написать';
           loadingMessageElement.style.display = 'none';
           textFormElement.style.display = 'flex';
         })
     }
+
     buttonElement.addEventListener("click", addComment)
   });
 
-
-
   render();
+  
 
 
   console.log("It works!");
