@@ -53,6 +53,9 @@
     )
       .then((response) => {
         isLoaded = true
+          if(response.status === 500) {
+            throw new Error("Ошибка на сервере, попробуйте чуть позже")
+          }
         return response.json();
       })
       .then((responseData) => {
@@ -68,7 +71,17 @@
         comments = appComments;
         render();
         loadingElement.style.display = 'none';
-      });
+      })
+      .catch ((error) => {
+          if (error.message === "NetworkError when attempting to fetch resource.") {
+            return alert("Отсутствует интернет")
+          }
+          alert(error.message)
+          console.error(error)
+        })
+        .finally(() => {
+          loadingElement.textContent = 'Не удалось загрузить страницу'
+        })
   };
   getComments();
 
