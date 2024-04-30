@@ -26,11 +26,10 @@
 </body>
 
 <style>
-  .error { 
+  .error {
     background-color: red;
   }
 </style>
-
 
 
 <script>
@@ -53,8 +52,11 @@
     )
       .then((response) => {
         isLoaded = true
-          if(response.status === 500) {
-            throw new Error("Ошибка на сервере, попробуйте чуть позже")
+        if (!response.ok) {
+            if (response.status === 500) {
+              alert("Сервер сломался, попробуйте позже")
+            }
+            throw new Error('Ответ сервера не был успешным')
           }
         return response.json();
       })
@@ -73,14 +75,13 @@
         loadingElement.style.display = 'none';
       })
       .catch ((error) => {
-          if (error.message === "NetworkError when attempting to fetch resource.") {
-            return alert("Отсутствует интернет")
+          if (error.messeg !== 'Ответ не был успешным') {
+            console.error('Возникла проблема с операцией fetch:', error);
+            alert("Кажется, у вас сломался интернет, попробуйте позже.")
           }
-          alert(error.message)
-          console.error(error)
         })
         .finally(() => {
-          loadingElement.textContent = 'Не удалось загрузить страницу'
+          loadingElement.textContent = 'Не удалось загрузить страницу';
         })
   };
   getComments();
@@ -90,7 +91,6 @@
   function funcDate(currentDate) {
     return currentDate = new Date().toLocaleDateString('ru-RU', { year: '2-digit', month: '2-digit', day: '2-digit' }) + ' ' + new Date(comment.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
-
 
   function render() {
     listElement.innerHTML = comments.map((comment, index) => {
@@ -166,10 +166,6 @@
       const textFormElement = document.querySelector('.add-form');
       textFormElement.style.display = 'none';
 
-      // Ввод нового коментария
-      buttonElement.disabled = true;
-      buttonElement.textContent = 'Ждите...';
-
       // Функция добавления данных на сервер
       fetch(
         'https://wedev-api.sky.pro/api/v1/anastasia-petrova/comments',
@@ -186,17 +182,25 @@
               .replaceAll("<", "&lt;")
               .replaceAll(">", "&gt;")
               .replaceAll('"', "&quot;"),
-              forceError : true
+              forceError: true
           })
         }
       )
+    .catch(() => {
+      throw new Error('Возникла проблема с операцией fetch:')
+    })
         .then((response) => {
-          if (response.status === 400) {
-            throw new Error("Введен имя или текст меньше 3 символов")
+          if (!response.ok) {
+            if (response.status === 400) {
+              throw new Error("Имя и комментарий должны быть не меньше 3 символов")
+            } else if (response.status === 500) {
+              throw new Error("Сервер сломался, попробуйте позже")
+            }
+            throw new Error('Ответ сервера не был успешным')
           }
-          if(response.status === 500) {
-            throw new Error("Ошибка на сервере, попробуйте чуть позже")
-          }
+          return response.json();
+        })
+        .then(() => {
           return getComments();
         })
         .then(() => {
@@ -204,26 +208,21 @@
           textInputElement.value = "";
         })
         .catch ((error) => {
-          if (error.message === "NetworkError when attempting to fetch resource.") {
-            return alert("Отсутствует интернет")
-          }
           alert(error.message)
-          console.error(error)
         })
-        .finally(() => { 
-          buttonElement.disabled = false;
-          buttonElement.textContent = 'Написать';
+        .finally(() => {
           loadingMessageElement.style.display = 'none';
           textFormElement.style.display = 'flex';
         })
     }
-
-    buttonElement.addEventListener("click", addComment)
+      addComment();
   });
 
   render();
   
+
   console.log("It works!");
 </script>
 
 </html>
+
