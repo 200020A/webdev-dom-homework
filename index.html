@@ -32,7 +32,6 @@
 </style>
 
 
-
 <script>
   "use strict";
   // Код писать здесь
@@ -53,6 +52,12 @@
     )
       .then((response) => {
         isLoaded = true
+        if (!response.ok) {
+            if (response.status === 500) {
+              alert("Сервер сломался, попробуйте позже")
+            }
+            throw new Error('Ответ сервера не был успешным')
+          }
         return response.json();
       })
       .then((responseData) => {
@@ -68,7 +73,16 @@
         comments = appComments;
         render();
         loadingElement.style.display = 'none';
-      });
+      })
+      .catch ((error) => {
+          if (error.messeg !== 'Ответ не был успешным') {
+            console.error('Возникла проблема с операцией fetch:', error);
+            alert("Кажется, у вас сломался интернет, попробуйте позже.")
+          }
+        })
+        .finally(() => {
+          loadingElement.textContent = 'Не удалось загрузить страницу';
+        })
   };
   getComments();
 
@@ -77,7 +91,6 @@
   function funcDate(currentDate) {
     return currentDate = new Date().toLocaleDateString('ru-RU', { year: '2-digit', month: '2-digit', day: '2-digit' }) + ' ' + new Date(comment.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
-
 
   function render() {
     listElement.innerHTML = comments.map((comment, index) => {
@@ -143,56 +156,73 @@
       return
     }
 
-    addComment()
+    let currentDate = new Date();
+
+    function addComment() {
+      const loadingMessageElement = document.getElementById('loading-message');
+      loadingMessageElement.style.display = 'block';
+
+      //Скрываем форму добавления комментария
+      const textFormElement = document.querySelector('.add-form');
+      textFormElement.style.display = 'none';
+
+      // Функция добавления данных на сервер
+      fetch(
+        'https://wedev-api.sky.pro/api/v1/anastasia-petrova/comments',
+        {
+          method: "POST",
+          body: JSON.stringify({
+            name: nameInputElement.value
+              .replaceAll("&", "&amp;")
+              .replaceAll("<", "&lt;")
+              .replaceAll(">", "&gt;")
+              .replaceAll('"', "&quot;"),
+            text: textInputElement.value
+              .replaceAll("&", "&amp;")
+              .replaceAll("<", "&lt;")
+              .replaceAll(">", "&gt;")
+              .replaceAll('"', "&quot;"),
+              forceError: true
+          })
+        }
+      )
+    .catch(() => {
+      throw new Error('Возникла проблема с операцией fetch:')
+    })
+        .then((response) => {
+          if (!response.ok) {
+            if (response.status === 400) {
+              throw new Error("Имя и комментарий должны быть не меньше 3 символов")
+            } else if (response.status === 500) {
+              throw new Error("Сервер сломался, попробуйте позже")
+            }
+            throw new Error('Ответ сервера не был успешным')
+          }
+          return response.json();
+        })
+        .then(() => {
+          return getComments();
+        })
+        .then(() => {
+          nameInputElement.value = "";
+          textInputElement.value = "";
+        })
+        .catch ((error) => {
+          alert(error.message)
+        })
+        .finally(() => {
+          loadingMessageElement.style.display = 'none';
+          textFormElement.style.display = 'flex';
+        })
+    }
+      addComment();
   });
 
-  function addComment() {
-    const loadingMessageElement = document.getElementById('loading-message');
-    loadingMessageElement.style.display = 'block';
-
-    //Скрываем форму добавления комментария
-    const textFormElement = document.querySelector('.add-form');
-    textFormElement.style.display = 'none';
-
-    // Ввод нового коментария
-    buttonElement.disabled = true;
-    buttonElement.textContent = 'Ждите...';
-
-    // Функция добавления данных на сервер
-    fetch(
-      'https://wedev-api.sky.pro/api/v1/anastasia-petrova/comments',
-      {
-        method: "POST",
-        body: JSON.stringify({
-          name: nameInputElement.value
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;"),
-          text: textInputElement.value
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;")
-        })
-      }
-    )
-      .then(() => {
-        return getComments();
-      })
-      .then(() => {
-        nameInputElement.value = "";
-        textInputElement.value = "";
-        buttonElement.disabled = false;
-        buttonElement.textContent = 'Написать';
-        loadingMessageElement.style.display = 'none';
-        textFormElement.style.display = 'flex';
-      })
-  }
-
   render();
+  
 
   console.log("It works!");
 </script>
 
 </html>
+
