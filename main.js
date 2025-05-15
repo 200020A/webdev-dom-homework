@@ -1,73 +1,199 @@
 "use strict";
 
-import { getTodos } from "./api.js";
+import { getTodos, addTodo, login, register, isLoggedIn, getUser, setUser, logout } from "./api.js";
+import { renderLoginForm, renderRegisterForm } from "./login.js";
 
-// Код писать здесь
 const buttonElement = document.getElementById("add-button");
 const listElement = document.getElementById("list");
 const nameInputElement = document.getElementById("name-input");
 const textInputElement = document.getElementById("text-input");
+const loadingElement = document.getElementById("loading");
+const loadingMessageElement = document.getElementById("loading-message");
+const addFormElement = document.querySelector(".add-form");
 export let isLoaded = false;
 
+let comments = [];
+
+init();
+
+function init() {
+  if (isLoggedIn()) {
+    showAuthorizedUI();
+  } else {
+    showUnauthorizedUI();
+  }
+  
+  getComments();
+}
+
+function showAuthorizedUI() {
+  const user = getUser();
+  
+  addFormElement.style.display = "flex";
+  
+  nameInputElement.value = user.name;
+  nameInputElement.setAttribute("readonly", true);
+  
+  let logoutButton = document.querySelector(".logout-button");
+  if (!logoutButton) {
+    logoutButton = document.createElement("button");
+    logoutButton.textContent = "Выйти";
+    logoutButton.className = "logout-button";
+    logoutButton.addEventListener("click", handleLogout);
+    
+    document.querySelector(".add-form-row").appendChild(logoutButton);
+  }
+  
+  const authLink = document.getElementById("auth-link");
+  if (authLink) {
+    authLink.remove();
+  }
+}
+
+function showUnauthorizedUI() {
+  addFormElement.style.display = "none";
+  
+  let authLink = document.getElementById("auth-link");
+  if (!authLink) {
+    authLink = document.createElement("div");
+    authLink.id = "auth-link";
+    authLink.innerHTML = '<a href="#" id="auth-link-button">Чтобы добавить комментарий, авторизуйтесь</a>';
+    authLink.style.margin = "20px 0";
+    authLink.style.textAlign = "center";
+    
+    document.querySelector(".container").insertBefore(authLink, addFormElement);
+    
+    document.getElementById("auth-link-button").addEventListener("click", showLoginForm);
+  }
+  
+  const logoutButton = document.querySelector(".logout-button");
+  if (logoutButton) {
+    logoutButton.remove();
+  }
+}
+
+function handleLogout() {
+  logout();
+  showUnauthorizedUI();
+}
+
+function showLoginForm(event) {
+  if (event) event.preventDefault();
+  
+  const loginForm = renderLoginForm();
+  
+  loginForm.loginButton.addEventListener("click", () => {
+    const loginValue = loginForm.loginInput.value.trim();
+    const passwordValue = loginForm.passwordInput.value.trim();
+    
+    if (!loginValue || !passwordValue) {
+      showError(loginForm.errorMessage, "Логин и пароль обязательны для заполнения");
+      return;
+    }
+    
+    login(loginValue, passwordValue)
+      .then((data) => {
+        setUser(data.user);
+        loginForm.element.innerHTML = loginForm.originalContent;
+        init();
+      })
+      .catch((error) => {
+        showError(loginForm.errorMessage, error.message);
+      });
+  });
+  
+  loginForm.registerButton.addEventListener("click", () => {
+    showRegisterForm();
+  });
+  
+  loginForm.backButton.addEventListener("click", () => {
+    loginForm.element.innerHTML = loginForm.originalContent;
+    init();
+  });
+}
+
+function showRegisterForm() {
+  const registerForm = renderRegisterForm();
+  
+  registerForm.registerButton.addEventListener("click", () => {
+    const nameValue = registerForm.nameInput.value.trim();
+    const loginValue = registerForm.loginInput.value.trim();
+    const passwordValue = registerForm.passwordInput.value.trim();
+    
+    if (!nameValue || !loginValue || !passwordValue) {
+      showError(registerForm.errorMessage, "Все поля обязательны для заполнения");
+      return;
+    }
+    
+    register(loginValue, passwordValue, nameValue)
+      .then((data) => {
+        setUser(data.user);
+        registerForm.element.innerHTML = registerForm.originalContent;
+        init();
+      })
+      .catch((error) => {
+        showError(registerForm.errorMessage, error.message);
+      });
+  });
+  
+  registerForm.backButton.addEventListener("click", () => {
+    showLoginForm();
+  });
+}
+
+function showError(errorElement, message) {
+  errorElement.textContent = message;
+  errorElement.style.display = "block";
+  
+  setTimeout(() => {
+    errorElement.style.display = "none";
+  }, 3000);
+}
+
 function getComments() {
-  const loadingElement = document.getElementById("loading");
   if (isLoaded === false) {
     loadingElement.style.display = "block";
   }
+  
   isLoaded = true;
+  
   getTodos()
     .then((responseData) => {
-      const appComments = responseData.comments.map((comment) => {
+      comments = responseData.comments.map((comment) => {
         return {
           name: comment.author.name,
-          date:
-            new Date(comment.date).toLocaleDateString("ru-RU", {
-              year: "2-digit",
-              month: "2-digit",
-              day: "2-digit",
-            }) +
-            " " +
-            new Date(comment.date).toLocaleTimeString("ru-RU", {
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-            }),
+          date: formatDate(comment.date),
           text: comment.text,
           likeCount: comment.likes,
-          isLiked: false,
+          isLiked: comment.isLiked,
         };
       });
-      comments = appComments;
+      
       render();
       loadingElement.style.display = "none";
     })
     .catch((error) => {
-      if (error.messeg !== "Ответ не был успешным") {
-        console.error("Возникла проблема с операцией fetch:", error);
-        alert("Кажется, у вас сломался интернет, попробуйте позже.");
-      }
-    })
-    .finally(() => {
+      console.error("Возникла проблема с операцией fetch:", error);
       loadingElement.textContent = "Не удалось загрузить страницу";
     });
 }
-getComments();
 
-let comments = [];
-
-function funcDate(currentDate) {
-  return (currentDate =
-    new Date().toLocaleDateString("ru-RU", {
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  
+  return (
+    date.toLocaleDateString("ru-RU", {
       year: "2-digit",
       month: "2-digit",
       day: "2-digit",
     }) +
     " " +
-    new Date(comment.date).toLocaleTimeString("ru-RU", {
+    date.toLocaleTimeString("ru-RU", {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
-    }));
+    })
+  );
 }
 
 function render() {
@@ -100,106 +226,78 @@ function render() {
 
 function answerComment() {
   const comment = document.querySelectorAll(".comment");
-  const formElementText = document.querySelector(".add-form-text");
-  const formElementName = document.querySelector(".add-form-name");
+  
   comment.forEach((el, index) => {
     el.addEventListener("click", (event) => {
-      formElementText.value = `>${comments[index].name} \n ${comments[index].text}`;
+      if (isLoggedIn()) {
+        textInputElement.value = `>${comments[index].name} \n ${comments[index].text}`;
+      }
     });
   });
 }
 
 function initEventListener() {
   const likeButtonElements = document.querySelectorAll(".like-button");
+  
   for (const likeButtonElement of likeButtonElements) {
     likeButtonElement.addEventListener("click", (event) => {
       event.stopPropagation();
       const index = likeButtonElement.dataset.index;
-      if (comments[index].isLiked) {
-        comments[index].isLiked = !comments[index].isLiked;
-        comments[index].likeCount--;
+      
+      if (isLoggedIn()) {
+        if (comments[index].isLiked) {
+          comments[index].isLiked = !comments[index].isLiked;
+          comments[index].likeCount--;
+        } else {
+          comments[index].isLiked = !comments[index].isLiked;
+          comments[index].likeCount++;
+        }
+        render();
       } else {
-        comments[index].isLiked = !comments[index].isLiked;
-        comments[index].likeCount++;
+        alert("Чтобы ставить лайки, необходимо авторизоваться");
       }
-      render();
     });
   }
 }
 
 buttonElement.addEventListener("click", () => {
-  nameInputElement.classList.remove("error");
+  if (!isLoggedIn()) {
+    alert("Чтобы добавлять комментарии, необходимо авторизоваться");
+    return;
+  }
+  
   textInputElement.classList.remove("error");
-  if (
-    nameInputElement.value.trim() === "" ||
-    textInputElement.value.trim() === ""
-  ) {
-    nameInputElement.classList.add("error");
+  
+  if (textInputElement.value.trim() === "") {
     textInputElement.classList.add("error");
     return;
   }
 
-  let currentDate = new Date();
+  loadingMessageElement.style.display = "block";
+  
+  addFormElement.style.display = "none";
 
-  function addComment() {
-    const loadingMessageElement = document.getElementById("loading-message");
-    loadingMessageElement.style.display = "block";
+  const name = nameInputElement.value.trim();
 
-    //Скрываем форму добавления комментария
-    const textFormElement = document.querySelector(".add-form");
-    textFormElement.style.display = "none";
-
-    // Функция добавления данных на сервер
-    fetch("https://wedev-api.sky.pro/api/v1/anastasia-petrova/comments", {
-      method: "POST",
-      body: JSON.stringify({
-        name: nameInputElement.value
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;"),
-        text: textInputElement.value
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;"),
-        forceError: true,
-      }),
+  addTodo(
+    textInputElement.value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;"),
+    name
+  )
+    .then(() => {
+      return getComments();
     })
-      .catch(() => {
-        throw new Error("Возникла проблема с операцией fetch:");
-      })
-      .then((response) => {
-        if (!response.ok) {
-          if (response.status === 400) {
-            throw new Error(
-              "Имя и комментарий должны быть не меньше 3 символов"
-            );
-          } else if (response.status === 500) {
-            throw new Error("Сервер сломался, попробуйте позже");
-          }
-          throw new Error("Ответ сервера не был успешным");
-        }
-        return response.json();
-      })
-      .then(() => {
-        return getComments();
-      })
-      .then(() => {
-        nameInputElement.value = "";
-        textInputElement.value = "";
-      })
-      .catch((error) => {
-        alert(error.message);
-      })
-      .finally(() => {
-        loadingMessageElement.style.display = "none";
-        textFormElement.style.display = "flex";
-      });
-  }
-  addComment();
+    .then(() => {
+      textInputElement.value = "";
+    })
+    .catch((error) => {
+      alert(error.message);
+    })
+    .finally(() => {
+      loadingMessageElement.style.display = "none";
+      addFormElement.style.display = "flex";
+    });
 });
-
-render();
-
-console.log("It works!");
